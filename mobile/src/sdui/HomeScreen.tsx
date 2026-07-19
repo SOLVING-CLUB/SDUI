@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { RefreshControl, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Platform, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { ScreenConfig, WidgetInstance } from "./types";
 import { WIDGET_REGISTRY } from "./widgets";
 
@@ -40,8 +40,13 @@ export function HomeScreen({
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F9FAFB" }}>
-      {/* Themed header */}
-      <View style={{ backgroundColor: tab.theme.gradientFrom, paddingTop: 8 }}>
+      {/* Themed header — pad below the Android status bar */}
+      <View
+        style={{
+          backgroundColor: tab.theme.gradientFrom,
+          paddingTop: (Platform.OS === "android" ? StatusBar.currentHeight ?? 24 : 0) + 10,
+        }}
+      >
         <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 16 }}>
           <View>
             <Text style={{ fontSize: 11, fontWeight: "600", color: fg, opacity: 0.8 }}>Blinkit in</Text>
@@ -56,7 +61,7 @@ export function HomeScreen({
           </View>
         </View>
 
-        <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#fff", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10 }}>
             <Text>🔍</Text>
             <RotatingPlaceholder words={config.header.searchPlaceholders} />
@@ -64,12 +69,16 @@ export function HomeScreen({
           </View>
         </View>
 
-        {/* Tab bar */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 8 }}>
+        {/* Tab bar — tabs share the full width; scrolls only when they overflow */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 4 }}
+        >
           {config.tabs.map((t) => {
             const active = t.id === tab.id;
             return (
-              <TouchableOpacity key={t.id} onPress={() => setTabId(t.id)} style={{ minWidth: 64, alignItems: "center", paddingHorizontal: 8, paddingBottom: 6, opacity: active ? 1 : 0.7 }}>
+              <TouchableOpacity key={t.id} onPress={() => setTabId(t.id)} style={{ flex: 1, minWidth: 64, alignItems: "center", paddingHorizontal: 6, paddingBottom: 0, opacity: active ? 1 : 0.7 }}>
                 {t.badge ? (
                   <Text style={{ position: "absolute", top: -2, right: 2, fontSize: 8, fontWeight: "700", color: "#fff", backgroundColor: t.badge.color, borderRadius: 999, paddingHorizontal: 5, zIndex: 1 }}>
                     {t.badge.text}
@@ -77,7 +86,7 @@ export function HomeScreen({
                 ) : null}
                 <Text style={{ fontSize: 18 }}>{t.icon}</Text>
                 <Text style={{ fontSize: 11, fontWeight: active ? "700" : "400", color: fg }}>{t.title}</Text>
-                <View style={{ marginTop: 2, height: 3, width: 32, borderRadius: 999, backgroundColor: active ? (tab.theme.dark ? "#fff" : "#1F2937") : "transparent" }} />
+                <View style={{ marginTop: 4, marginBottom: 6, height: 3, alignSelf: "stretch", marginHorizontal: 10, borderRadius: 999, backgroundColor: active ? (tab.theme.dark ? "#fff" : "#1F2937") : "transparent" }} />
               </TouchableOpacity>
             );
           })}
@@ -94,7 +103,7 @@ export function HomeScreen({
       </ScrollView>
 
       {/* Bottom nav */}
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-around", borderTopWidth: 1, borderTopColor: "#E5E7EB", backgroundColor: "#fff", paddingVertical: 6 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-around", borderTopWidth: 1, borderTopColor: "#E5E7EB", backgroundColor: "#fff", paddingTop: 8, paddingBottom: 14, paddingHorizontal: 8 }}>
         {config.bottomNav.map((n, i) => (
           <View key={i} style={{ alignItems: "center" }}>
             <Text style={{ fontSize: 18 }}>{n.icon}</Text>

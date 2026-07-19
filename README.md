@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Quick-Commerce SDUI Platform
 
-## Getting Started
+Blinkit-style homepage driven entirely by **Server-Driven UI**: the layout, tabs, themes,
+and widgets come from a versioned JSON API, managed from a web dashboard. UI changes ship
+by clicking **Publish** — no app build, no Play Store / App Store review.
 
-First, run the development server:
+## What's inside
+
+| Piece | Where | What it is |
+|---|---|---|
+| Web demo (phone frame) | `/` | The "app" for presentations, renders JSON from the layout API |
+| Admin dashboard | `/admin` | Tabs, themes, widget palette, reorder, live preview, publish, rollback |
+| Layout API | `/api/screen/home` | Versioned config: draft → publish → rollback |
+| Config store | `src/lib/sdui/store.ts` | v1: JSON files in `data/` (gitignored). Swap for Supabase to deploy |
+| Widget vocabulary | `src/components/sdui/widgets.tsx` | 11 widget types + registry (web renderer) |
+| **Mobile app (Expo/RN)** | `mobile/` | Real Android/iOS client, same API, same registry pattern |
+
+## Run the web demo + dashboard
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# app:       http://localhost:3000
+# dashboard: http://localhost:3000/admin
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Demo flow: change a tab's gradient / reorder widgets / edit props in the dashboard →
+**🚀 Publish** → on the app page hit **↻ Refresh** → new UI, no build.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run the real mobile app (no EAS, free)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cd mobile && npm install
 
-## Learn More
+# find your Mac's LAN IP (phone and Mac must share Wi-Fi):
+ipconfig getifaddr en0
 
-To learn more about Next.js, take a look at the following resources:
+# Expo Go (fastest — install "Expo Go" from Play Store, scan QR):
+EXPO_PUBLIC_API_URL=http://<MAC_LAN_IP>:3000 npx expo start
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Real local APK build (requires Android Studio SDK; no EAS, no cost):
+EXPO_PUBLIC_API_URL=http://<MAC_LAN_IP>:3000 npx expo run:android
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# iOS simulator (requires Xcode):
+npx expo run:ios
+```
 
-## Deploy on Vercel
+The mobile app fetches the same `/api/screen/home` JSON. Publish from the dashboard and
+pull-to-refresh on the phone — the app's UI changes with **zero rebuilds**. That's the SDUI
+pitch: you only ship a new binary when you add a *new widget type* to the registry.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Security
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Mutating API routes (`draft` PUT, `publish`, `rollback`) accept requests freely when
+`ADMIN_TOKEN` is unset (local demo). For any deployed environment set `ADMIN_TOKEN`,
+then in the dashboard browser console run
+`localStorage.setItem("adminToken", "<token>")` once.
+
+## Deploying later (still free)
+
+- Web + API → Vercel Hobby. Swap `store.ts` for a Supabase-backed implementation
+  (the exported functions are the store interface) since serverless has no writable disk.
+- Mobile → local `expo run:android` APK; distribute the file directly for demos.

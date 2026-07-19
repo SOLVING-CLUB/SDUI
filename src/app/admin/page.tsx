@@ -106,25 +106,44 @@ export default function Admin() {
     });
   }
 
-  async function saveDraft() {
+  function promptForToken() {
+    const t = prompt(
+      "Enter the ADMIN_TOKEN (the exact value set in Vercel → Settings → Environment Variables). It is stored only in this browser."
+    );
+    if (t) {
+      localStorage.setItem("adminToken", t.trim());
+      setStatus("🔑 Token saved — try again");
+    }
+  }
+
+  async function saveDraft(): Promise<boolean> {
     setStatus("Saving…");
-    await fetch("/api/screen/home/draft", {
+    const res = await fetch("/api/screen/home/draft", {
       method: "PUT",
       headers: authHeaders(),
       body: JSON.stringify({ config }),
     });
+    if (res.status === 401) {
+      setStatus("⛔ Unauthorized — click 🔑 Set token and enter your ADMIN_TOKEN");
+      return false;
+    }
     setStatus("Draft saved");
     setDirty(false);
+    return true;
   }
 
   async function publishNow() {
-    await saveDraft();
+    if (!(await saveDraft())) return;
     setStatus("Publishing…");
     const res = await fetch("/api/screen/home/publish", {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ label: `Published from dashboard` }),
     });
+    if (res.status === 401) {
+      setStatus("⛔ Unauthorized — click 🔑 Set token and enter your ADMIN_TOKEN");
+      return;
+    }
     const json = await res.json();
     setStatus(json.ok ? `🚀 Published v${json.version} — live now` : `Error: ${json.error}`);
     load();
@@ -132,11 +151,15 @@ export default function Admin() {
 
   async function rollbackTo(version: number) {
     setStatus(`Rolling back to v${version}…`);
-    await fetch("/api/screen/home/versions", {
+    const res = await fetch("/api/screen/home/versions", {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ version }),
     });
+    if (res.status === 401) {
+      setStatus("⛔ Unauthorized — click 🔑 Set token and enter your ADMIN_TOKEN");
+      return;
+    }
     setStatus(`↩️ Live is now v${version}`);
     await load();
     selectWidget(null);
@@ -153,6 +176,9 @@ export default function Admin() {
         <span className="text-xs text-gray-500">screen: home · live v{meta?.liveVersion}</span>
         <span className="ml-auto text-xs text-gray-500">{status}</span>
         {dirty ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">unsaved</span> : null}
+        <button onClick={promptForToken} title="Set the ADMIN_TOKEN for this browser" className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">
+          🔑 Set token
+        </button>
         <button onClick={saveDraft} className="rounded-lg border border-gray-300 px-4 py-1.5 text-sm font-semibold hover:bg-gray-50">
           Save draft
         </button>

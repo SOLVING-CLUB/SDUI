@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Platform, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Animated, Platform, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { ScreenConfig, WidgetInstance } from "./types";
 import { WIDGET_REGISTRY } from "./widgets";
 
@@ -33,7 +33,23 @@ export function HomeScreen({
   onRefresh: () => void;
 }) {
   const [tabId, setTabId] = useState(config.tabs[0]?.id);
+  const fade = useRef(new Animated.Value(1)).current;
+  const dirRef = useRef(1);
   const tab = config.tabs.find((t) => t.id === tabId) ?? config.tabs[0];
+
+  // Directional fade+slide: content slips out, swaps, slips in from the
+  // side of the tab you're heading toward — like the real app.
+  const switchTab = (id: string) => {
+    if (id === tabId) return;
+    const oldI = config.tabs.findIndex((t) => t.id === tabId);
+    const newI = config.tabs.findIndex((t) => t.id === id);
+    dirRef.current = newI >= oldI ? 1 : -1;
+    Animated.timing(fade, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => {
+      setTabId(id);
+      Animated.timing(fade, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    });
+  };
+
   if (!tab) return <Text style={{ padding: 32 }}>No tabs configured</Text>;
 
   const fg = tab.theme.dark ? "#fff" : "#111827";
@@ -78,7 +94,7 @@ export function HomeScreen({
           {config.tabs.map((t) => {
             const active = t.id === tab.id;
             return (
-              <TouchableOpacity key={t.id} onPress={() => setTabId(t.id)} style={{ flex: 1, minWidth: 64, alignItems: "center", paddingHorizontal: 6, paddingBottom: 0, opacity: active ? 1 : 0.7 }}>
+              <TouchableOpacity key={t.id} onPress={() => switchTab(t.id)} style={{ flex: 1, minWidth: 64, alignItems: "center", paddingHorizontal: 6, paddingBottom: 0, opacity: active ? 1 : 0.7 }}>
                 {t.badge ? (
                   <Text style={{ position: "absolute", top: -2, right: 2, fontSize: 8, fontWeight: "700", color: "#fff", backgroundColor: t.badge.color, borderRadius: 999, paddingHorizontal: 5, zIndex: 1 }}>
                     {t.badge.text}
@@ -94,13 +110,22 @@ export function HomeScreen({
       </View>
 
       {/* Widget feed */}
-      <ScrollView
-        style={{ flex: 1, backgroundColor: tab.theme.gradientTo }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      <Animated.View
+        style={{
+          flex: 1,
+          backgroundColor: tab.theme.gradientTo,
+          opacity: fade,
+          transform: [{ translateX: fade.interpolate({ inputRange: [0, 1], outputRange: [dirRef.current * 28, 0] }) }],
+        }}
       >
-        <ScreenRenderer widgets={tab.widgets} />
-        <View style={{ height: 16 }} />
-      </ScrollView>
+        <ScrollView
+          style={{ flex: 1 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          <ScreenRenderer widgets={tab.widgets} />
+          <View style={{ height: 16 }} />
+        </ScrollView>
+      </Animated.View>
 
       {/* Bottom nav */}
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-around", borderTopWidth: 1, borderTopColor: "#E5E7EB", backgroundColor: "#fff", paddingTop: 8, paddingBottom: 14, paddingHorizontal: 8 }}>

@@ -106,8 +106,10 @@ export function PhoneApp({
         className="flex-1 overflow-y-auto"
         style={{ background: `linear-gradient(180deg, ${tab.theme.gradientTo}, #F9FAFB 240px)` }}
       >
-        <ScreenRenderer widgets={tab.widgets} />
-        <div className="h-4" />
+        <div key={tab.id} className="sdui-feed-enter">
+          <ScreenRenderer widgets={tab.widgets} />
+          <div className="h-4" />
+        </div>
       </div>
 
       {/* Bottom nav */}

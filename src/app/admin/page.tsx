@@ -44,6 +44,8 @@ export default function Admin() {
   const [propsError, setPropsError] = useState("");
   const [status, setStatus] = useState("");
   const [dirty, setDirty] = useState(false);
+  const [tokenOk, setTokenOk] = useState<boolean | null>(null);
+  const [tokenInput, setTokenInput] = useState("");
 
   const load = useCallback(async () => {
     const [draftRes, metaRes] = await Promise.all([
@@ -57,9 +59,23 @@ export default function Admin() {
     setDirty(false);
   }, []);
 
+  const verifyToken = useCallback(async () => {
+    const res = await fetch("/api/admin/check", { headers: authHeaders() });
+    setTokenOk(res.ok);
+    return res.ok;
+  }, []);
+
   useEffect(() => {
     load();
-  }, [load]);
+    verifyToken();
+  }, [load, verifyToken]);
+
+  async function saveToken() {
+    localStorage.setItem("adminToken", tokenInput.trim());
+    setTokenInput("");
+    const ok = await verifyToken();
+    setStatus(ok ? "🔑 Token verified — you're authorized" : "⛔ Token rejected — check it matches Vercel's ADMIN_TOKEN");
+  }
 
   const tab = useMemo(() => config?.tabs.find((t) => t.id === tabId), [config, tabId]);
   const widget = useMemo(() => tab?.widgets.find((w) => w.id === selectedWidget), [tab, selectedWidget]);
@@ -104,16 +120,6 @@ export default function Admin() {
       if (i < 0 || j < 0 || j >= t.widgets.length) return;
       [t.widgets[i], t.widgets[j]] = [t.widgets[j], t.widgets[i]];
     });
-  }
-
-  function promptForToken() {
-    const t = prompt(
-      "Enter the ADMIN_TOKEN (the exact value set in Vercel → Settings → Environment Variables). It is stored only in this browser."
-    );
-    if (t) {
-      localStorage.setItem("adminToken", t.trim());
-      setStatus("🔑 Token saved — try again");
-    }
   }
 
   async function saveDraft(): Promise<boolean> {
@@ -170,14 +176,54 @@ export default function Admin() {
 
   return (
     <main className="min-h-screen bg-gray-100">
+      {/* Token gate — shown automatically when the stored token is missing or rejected */}
+      {tokenOk === false ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-lg font-extrabold text-gray-900">🔑 Admin token required</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Paste the ADMIN_TOKEN (same value as in Vercel → Settings → Environment Variables). It's saved in this
+              browser so you won't be asked again.
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveToken();
+              }}
+            >
+              <input
+                type="password"
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                placeholder="ADMIN_TOKEN"
+                autoFocus
+                className="mt-4 w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm focus:border-gray-900 focus:outline-none"
+              />
+              <div className="mt-4 flex justify-end gap-2">
+                <button type="button" onClick={() => setTokenOk(null)} className="rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-100">
+                  Later
+                </button>
+                <button type="submit" disabled={!tokenInput.trim()} className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">
+                  Save & verify
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
       {/* Top bar */}
       <div className="flex items-center gap-4 border-b bg-white px-6 py-3 shadow-sm">
         <h1 className="text-lg font-extrabold text-gray-900">🛠️ UI Control Center</h1>
         <span className="text-xs text-gray-500">screen: home · live v{meta?.liveVersion}</span>
         <span className="ml-auto text-xs text-gray-500">{status}</span>
         {dirty ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">unsaved</span> : null}
-        <button onClick={promptForToken} title="Set the ADMIN_TOKEN for this browser" className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">
-          🔑 Set token
+        <button
+          onClick={() => setTokenOk(false)}
+          title="Change the admin token for this browser"
+          className={`rounded-lg border px-3 py-1.5 text-sm ${tokenOk ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-red-300 bg-red-50 text-red-700"}`}
+        >
+          {tokenOk ? "🔑 Authorized" : "🔑 Set token"}
         </button>
         <button onClick={saveDraft} className="rounded-lg border border-gray-300 px-4 py-1.5 text-sm font-semibold hover:bg-gray-50">
           Save draft

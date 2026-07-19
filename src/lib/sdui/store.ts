@@ -10,6 +10,8 @@ import { seedHomeConfig } from "./seed";
 const DATA_DIR = path.join(process.cwd(), "data", "screens");
 
 function screenDir(id: string) {
+  // Screen ids are path components — reject anything outside a strict slug.
+  if (!/^[a-z0-9_-]{1,64}$/.test(id)) throw new Error("invalid screen id");
   return path.join(DATA_DIR, id);
 }
 

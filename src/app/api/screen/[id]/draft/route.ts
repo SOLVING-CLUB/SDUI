@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getDraft, saveDraft } from "@/lib/sdui/store";
+import { requireAdmin } from "@/lib/sdui/auth";
 import { ScreenConfig } from "@/lib/sdui/types";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -10,6 +11,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   const { id } = await params;
   let body: { config: ScreenConfig };
   try {

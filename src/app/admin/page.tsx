@@ -24,6 +24,13 @@ const DEFAULT_PROPS: Record<string, any> = {
   see_all_button: { text: "See all products", emoji: "🛒" },
 };
 
+// When the API is deployed with ADMIN_TOKEN set, store the token once via
+// localStorage.setItem("adminToken", "...") in the browser console.
+function authHeaders(): Record<string, string> {
+  const t = typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
+  return { "Content-Type": "application/json", ...(t ? { Authorization: `Bearer ${t}` } : {}) };
+}
+
 function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
@@ -103,7 +110,7 @@ export default function Admin() {
     setStatus("Saving…");
     await fetch("/api/screen/home/draft", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({ config }),
     });
     setStatus("Draft saved");
@@ -115,7 +122,7 @@ export default function Admin() {
     setStatus("Publishing…");
     const res = await fetch("/api/screen/home/publish", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({ label: `Published from dashboard` }),
     });
     const json = await res.json();
@@ -127,7 +134,7 @@ export default function Admin() {
     setStatus(`Rolling back to v${version}…`);
     await fetch("/api/screen/home/versions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({ version }),
     });
     setStatus(`↩️ Live is now v${version}`);

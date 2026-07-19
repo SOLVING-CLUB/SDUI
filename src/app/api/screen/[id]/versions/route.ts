@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMeta, rollback } from "@/lib/sdui/store";
+import { requireAdmin } from "@/lib/sdui/auth";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -10,6 +11,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
 // Rollback: re-point live to an existing version.
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const denied = requireAdmin(req);
+  if (denied) return denied;
   const { id } = await params;
   const body = await req.json().catch(() => null);
   if (typeof body?.version !== "number")

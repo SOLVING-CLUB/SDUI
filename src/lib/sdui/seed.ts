@@ -6,15 +6,17 @@ import { ScreenConfig } from "./types";
 export const seedHomeConfig: ScreenConfig = {
   screenId: "home",
   header: {
+    brand: "BGB",
+    brandFull: "Balaji Grand Bazar",
     etaText: "10 minutes",
     address: "HOME - 3-14/21/4/D, srinivasapuram",
     searchPlaceholders: ["stationery", "umbrella", "kitchen appliances", "lipstick", "fever", "decorative lamp"],
   },
   bottomNav: [
-    { icon: "🏠", label: "Home", active: true },
-    { icon: "🧺", label: "Order Again" },
-    { icon: "🔲", label: "Categories" },
-    { icon: "🖨️", label: "Print" },
+    { icon: "home", label: "Home", active: true },
+    { icon: "bag", label: "Order Again" },
+    { icon: "grid", label: "Categories" },
+    { icon: "receipt", label: "My Orders" },
   ],
   tabs: [
     {

@@ -1,8 +1,49 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ScreenConfig, WidgetInstance } from "@/lib/sdui/types";
+import { BottomNavItem, ScreenConfig, WidgetInstance } from "@/lib/sdui/types";
 import { WIDGET_REGISTRY } from "./widgets";
+
+const BRAND_RED = "#C21B17";
+
+// Inline SVG nav icons (keys match the config's bottomNav icon field).
+const NAV_ICON_PATHS: Record<string, string> = {
+  home: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5Z",
+  bag: "M6 7V6a6 6 0 1 1 12 0v1h2a1 1 0 0 1 1 1l-1 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2L3 8a1 1 0 0 1 1-1h2Zm2 0h8V6a4 4 0 1 0-8 0v1Z",
+  grid: "M3 3h8v8H3V3Zm10 0h8v8h-8V3ZM3 13h8v8H3v-8Zm10 0h8v8h-8v-8Z",
+  receipt: "M5 2h14a1 1 0 0 1 1 1v19l-3-2-3 2-3-2-3 2-3-2V3a1 1 0 0 1 1-1Zm3 5h8v2H8V7Zm0 4h8v2H8v-2Z",
+  print: "M6 3h12v4h2a2 2 0 0 1 2 2v7h-4v4H6v-4H2V9a2 2 0 0 1 2-2h2V3Zm2 12v4h8v-4H8Zm0-10v2h8V5H8Z",
+  person: "M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Zm0 2c-5 0-9 2.5-9 5.5V21h18v-1.5c0-3-4-5.5-9-5.5Z",
+};
+
+function BottomNav({ items }: { items: BottomNavItem[] }) {
+  const [active, setActive] = useState(() => Math.max(0, items.findIndex((n) => n.active)));
+  return (
+    <div className="flex flex-shrink-0 items-stretch border-t border-gray-100 bg-white px-1 pb-2.5 pt-1.5 shadow-[0_-2px_8px_rgba(0,0,0,0.05)]">
+      {items.map((n, i) => {
+        const isActive = i === active;
+        const path = NAV_ICON_PATHS[n.icon];
+        const color = isActive ? BRAND_RED : "#6B7280";
+        return (
+          <button key={i} onClick={() => setActive(i)} className="flex flex-1 flex-col items-center gap-0.5">
+            <span className={`rounded-full px-4 py-0.5 transition-colors ${isActive ? "bg-[#FCE9E8]" : ""}`}>
+              {path ? (
+                <svg width="21" height="21" viewBox="0 0 24 24" fill={color} className="transition-colors">
+                  <path d={path} />
+                </svg>
+              ) : (
+                <span className="text-lg">{n.icon}</span>
+              )}
+            </span>
+            <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`} style={{ color }}>
+              {n.label}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // The SDUI renderer: walks the widget list and delegates to the registry.
 // Unknown types are skipped so old clients survive new server payloads.
@@ -52,14 +93,22 @@ export function PhoneApp({
         style={{ background: `linear-gradient(180deg, ${tab.theme.gradientFrom}, ${tab.theme.gradientTo})` }}
       >
         <div className={`flex items-center justify-between px-4 pt-3 ${headerText}`}>
-          <div>
-            <div className="text-[11px] font-semibold opacity-80">Blinkit in</div>
-            <div className="text-2xl font-extrabold leading-6">{config.header.etaText}</div>
-            <div className="mt-0.5 text-[11px] font-medium opacity-90">{config.header.address} ▾</div>
+          <div className="flex items-center gap-3">
+            {/* BGB diamond monogram */}
+            <div className="flex h-10 w-10 items-center justify-center">
+              <div className="flex h-8 w-8 rotate-45 items-center justify-center rounded-md bg-[#C21B17]">
+                <span className="-rotate-45 text-[10px] font-black tracking-wide text-white">BGB</span>
+              </div>
+            </div>
+            <div>
+              <div className="text-[11px] font-bold opacity-85">{config.header.brandFull ?? "Balaji Grand Bazar"} in</div>
+              <div className="text-2xl font-extrabold leading-6">{config.header.etaText}</div>
+              <div className="mt-0.5 text-[11px] font-medium opacity-90">{config.header.address} ▾</div>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-white px-2 py-1 text-[11px] shadow">💳 ₹0</span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-white">👤</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-800 text-white">👤</span>
           </div>
         </div>
 
@@ -113,15 +162,7 @@ export function PhoneApp({
       </div>
 
       {/* Bottom nav */}
-      <div className="flex flex-shrink-0 items-center justify-around border-t bg-white px-2 py-1.5">
-        {config.bottomNav.map((n, i) => (
-          <div key={i} className={`flex flex-col items-center text-[10px] ${n.active ? "font-bold text-gray-900" : "text-gray-500"}`}>
-            <span className="text-xl">{n.icon}</span>
-            {n.label}
-          </div>
-        ))}
-        <span className="rounded-lg bg-violet-600 px-3 py-1.5 text-[11px] font-bold italic text-white">district</span>
-      </div>
+      <BottomNav items={config.bottomNav} />
     </div>
   );
 }

@@ -3,6 +3,8 @@
 export interface ScreenConfig {
   screenId: string;
   header: {
+    brand?: string; // short mark, e.g. "BGB"
+    brandFull?: string; // e.g. "Balaji Grand Bazar"
     etaText: string;
     address: string;
     searchPlaceholders: string[];
@@ -34,7 +36,7 @@ export interface WidgetInstance {
 }
 
 export interface BottomNavItem {
-  icon: string;
+  icon: string; // icon key (home | bag | grid | receipt | print | person) or an emoji fallback
   label: string;
   active?: boolean;
 }
